@@ -1,0 +1,16 @@
+{
+  // One file, zero installs: your editor picks this up automatically.
+  // Without "strict": true half of this course would silently stop working
+  // (strictNullChecks off = no null safety = toy TypeScript).
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2023", "dom"],
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true
+  },
+  "include": ["*.ts"]
+}
