@@ -55,20 +55,21 @@ function section(id: string, fn: () => void): void {
 //         on purpose (kept for web compatibility since 1995).
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof
 
-check("1.1a", typeof 42, TODO)
-check("1.1b", typeof "42", TODO)
-check("1.1c", typeof null, TODO)
-check("1.1d", typeof undefined, TODO)
-check("1.1e", typeof NaN, TODO)
-check("1.1f", typeof [], TODO)
-check("1.1g", typeof (() => {}), TODO)
-check("1.1h", typeof Symbol(), TODO)
-check("1.1i", typeof 10n, TODO)
-check("1.1j", typeof typeof 42, TODO)
+check("1.1a", typeof 42, "number")
+check("1.1b", typeof "42", "string")
+check("1.1c", typeof null, "object")
+check("1.1d", typeof undefined, "undefined")
+check("1.1e", typeof NaN, "number")
+check("1.1f", typeof [], "object")
+check("1.1g", typeof (() => { }), "function")
+check("1.1h", typeof Symbol(), "symbol")
+check("1.1i", typeof 10n, "bigint")
+check("1.1j", typeof typeof 42, "string")
 
 // EXPLAIN IT (2–4 sentences, use the vocab, say it out loud):
 /*
-
+The typeof operator returns a string indicating the type of the operand's value.
+- array is type "object" and null also. typeof typeof is indicating as "string"
 */
 
 // ═══ EXERCISE 1.2 ★ — strict equality is not "the safe one", it's "the simple one" ═══
@@ -77,17 +78,17 @@ check("1.1j", typeof typeof 42, TODO)
 // HINT 1: Two of these are the ONLY cases where === disagrees with "same value".
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness
 
-check("1.2a", 1 === 1.0, TODO)
-check("1.2b", (NaN as any) === (NaN as any), TODO)
-check("1.2c", 0 === -0, TODO)
-check("1.2d", "a" === "a", TODO)
-check("1.2e", ([] as any) === ([] as any), TODO)
-check("1.2f", (({}) as any) === ({}), TODO)
+check("1.2a", 1 === 1.0, true)
+check("1.2b", (NaN as any) === (NaN as any), false)
+check("1.2c", 0 === -0, true)
+check("1.2d", "a" === "a", true)
+check("1.2e", ([] as any) === ([] as any), false)
+check("1.2f", (({}) as any) === ({}), false)
 
 // EXPLAIN IT — why do 1.2e/f behave that way while 1.2d doesn't? What does ===
 // actually compare for objects vs primitives?
 /*
-
+obecjt and arrays stored separeted referencpoints in memory, primitive values stored directly. and the strickly and loosly equal compare reference values.
 */
 
 // ═══ EXERCISE 1.3 ★★ — Object.is: the third kind of equality ═══
@@ -97,12 +98,12 @@ check("1.2f", (({}) as any) === ({}), TODO)
 // HINT 2: Array.prototype.includes uses SameValueZero; indexOf uses ===.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
 
-check("1.3a", Object.is(NaN, NaN), TODO)
-check("1.3b", Object.is(0, -0), TODO)
-check("1.3c", Object.is(1, 1), TODO)
-check("1.3d", [NaN].includes(NaN), TODO)
-check("1.3e", [NaN].indexOf(NaN), TODO)
-check("1.3f", [0].includes(-0), TODO)
+check("1.3a", Object.is(NaN, NaN), true)
+check("1.3b", Object.is(0, -0), false)
+check("1.3c", Object.is(1, 1), true)
+check("1.3d", [NaN].includes(NaN), true)
+check("1.3e", [NaN].indexOf(NaN), -1)
+check("1.3f", [0].includes(-0), true)
 
 // EXPLAIN IT — name the three equality algorithms and where the language uses each:
 /*
@@ -119,16 +120,16 @@ check("1.3f", [0].includes(-0), TODO)
 //         object becomes primitive (ToPrimitive), then repeat.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality
 
-check("1.4a", null == undefined, TODO)
-check("1.4b", null == 0, TODO)
-check("1.4c", undefined == 0, TODO)
-check("1.4d", ("" as any) == 0, TODO)
-check("1.4e", ("0" as any) == 0, TODO)
-check("1.4f", ("" as any) == "0", TODO)
-check("1.4g", (true as any) == 1, TODO)
-check("1.4h", (true as any) == "1", TODO)
-check("1.4i", (false as any) == "", TODO)
-check("1.4j", null == false, TODO)
+check("1.4a", null == undefined, true)
+check("1.4b", null == 0, false)
+check("1.4c", undefined == 0, false)
+check("1.4d", ("" as any) == 0, true)
+check("1.4e", ("0" as any) == 0, true)
+check("1.4f", ("" as any) == "0", false)
+check("1.4g", (true as any) == 1, true)
+check("1.4h", (true as any) == "1", true)
+check("1.4i", (false as any) == "", true)
+check("1.4j", null == false, false)
 
 // EXPLAIN IT — recite the == algorithm from HINT 1 in your own words:
 /*
@@ -143,19 +144,19 @@ check("1.4j", null == false, TODO)
 // HINT 2: For 1.5d: !arr evaluates FIRST (plain boolean logic), then ==.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#type_coercion
 
-check("1.5a", ([] as any) == 0, TODO)
-check("1.5b", ([] as any) == "", TODO)
-check("1.5c", ([0] as any) == false, TODO)
+check("1.5a", ([] as any) == 0, true) // "" -> 0 -> false
+check("1.5b", ([] as any) == "", true)
+check("1.5c", ([0] as any) == false, true)
 const arr: any = []
-check("1.5d", arr == !arr, TODO) // i.e. [] == ![]
-check("1.5e", ([null] as any) == 0, TODO)
-check("1.5f", ([undefined] as any) == 0, TODO)
-check("1.5g", (({}) as any) == "[object Object]", TODO)
-check("1.5h", ([[]] as any) == 0, TODO)
+check("1.5d", arr == !arr, true) // i.e. [] == ![] "" == !"" 0 !0
+check("1.5e", ([null] as any) == 0, true)
+check("1.5f", ([undefined] as any) == 0, true)
+check("1.5g", (({}) as any) == "[object Object]", true)
+check("1.5h", ([[]] as any) == 0, true)
 
 // EXPLAIN IT — walk through 1.5d step by step (this is a classic interview trap):
 /*
-
+first run the ! operation that means ![] = ![]  →  !true  →  false = 0, then emopty array is "" qhich is 0 so 0 = 0
 */
 
 // ═══ EXERCISE 1.6 ★★ — the + operator: concatenation wins ═══
@@ -167,22 +168,22 @@ check("1.5h", ([[]] as any) == 0, TODO)
 // HINT 2: 1.6g contains a UNARY plus. Find it.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Addition
 
-check("1.6a", 1 + ("2" as any), TODO)
-check("1.6b", ("3" as any) - 1, TODO)
-check("1.6c", 1 + 2 + "3", TODO)
-check("1.6d", "1" + 2 + 3, TODO)
-check("1.6e", ([] as any) + [], TODO)
-check("1.6f", ([] as any) + {}, TODO)
-check("1.6g", ("b" as any) + "a" + +"a" + "a", TODO)
-check("1.6h", (true as any) + true, TODO)
-check("1.6i", (({}) as any) + [], TODO)
+check("1.6a", 1 + ("2" as any), "12")
+check("1.6b", ("3" as any) - 1, 2)
+check("1.6c", 1 + 2 + "3", "33")
+check("1.6d", "1" + 2 + 3, "123")
+check("1.6e", ([] as any) + [], "")
+check("1.6f", ([] as any) + {}, "[object Object]")
+check("1.6g", ("b" as any) + "a" + +"a" + "a", "baNaNa")
+check("1.6h", (true as any) + true, 2)
+check("1.6i", (({}) as any) + [], "[object Object]")
 // Note for 1.6i: in an old REPL, typing `{} + []` at the prompt gives a
 // DIFFERENT answer, because `{}` parses as an empty BLOCK, not an object.
 // Here the parentheses force expression position.
 
 // EXPLAIN IT — state the + rule and contrast it with - :
 /*
-
++ as an unary is the same as Number(n) + as a binary add numbers and is one operand is a string than converts number to string and  concatenate it. - is a mathematical - operator works only on numbers.
 */
 
 // ═══ EXERCISE 1.7 ★★ — truthiness: the exact list ═══
@@ -192,16 +193,16 @@ check("1.6i", (({}) as any) + [], TODO)
 //         undefined, NaN. EVERYTHING else is truthy. Everything.
 // DOCS: https://developer.mozilla.org/en-US/docs/Glossary/Falsy
 
-check("1.7a", Boolean(""), TODO)
-check("1.7b", Boolean("0"), TODO)
-check("1.7c", Boolean("false"), TODO)
-check("1.7d", Boolean([]), TODO)
-check("1.7e", Boolean({}), TODO)
+check("1.7a", Boolean(""), false)
+check("1.7b", Boolean("0"), true)
+check("1.7c", Boolean("false"), true)
+check("1.7d", Boolean([]), true)
+check("1.7e", Boolean({}), true)
 const boxedFalse: unknown = new Boolean(false)
-check("1.7f", Boolean(boxedFalse), TODO)
-check("1.7g", Boolean(0n), TODO)
-check("1.7h", Boolean(" "), TODO)
-check("1.7i", Boolean(NaN), TODO)
+check("1.7f", Boolean(boxedFalse), true)
+check("1.7g", Boolean(0n), false)
+check("1.7h", Boolean(" "), true)
+check("1.7i", Boolean(NaN), false)
 
 // EXPLAIN IT — why is 1.7f the nastiest one on this list? What general rule
 // about objects does it demonstrate?
@@ -492,4 +493,4 @@ function looseEq(a: unknown, b: unknown): boolean {
 */
 
 console.log(`\nchapter 01: ${_pass} pass, ${_fail} fail, ${_skip} unanswered`)
-export {}
+export { }
