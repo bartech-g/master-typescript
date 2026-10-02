@@ -219,18 +219,18 @@ check("1.7i", Boolean(NaN), false)
 //         parseInt("").
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseInt
 
-check("1.8a", Number(""), TODO)
-check("1.8b", Number("  12  "), TODO)
-check("1.8c", Number("12px"), TODO)
-check("1.8d", parseInt("12px"), TODO)
-check("1.8e", parseInt(""), TODO)
-check("1.8f", Number(null), TODO)
-check("1.8g", Number(undefined), TODO)
-check("1.8h", Number("0x10"), TODO)
-check("1.8i", Number([5]), TODO)
-check("1.8j", Number([1, 2]), TODO)
-check("1.8k", parseInt("08"), TODO)
-check("1.8l", Number(true), TODO)
+check("1.8a", Number(""), 0)
+check("1.8b", Number("  12  "), 12)
+check("1.8c", Number("12px"), NaN)
+check("1.8d", parseInt("12px"), 12)
+check("1.8e", parseInt(""), NaN)
+check("1.8f", Number(null), 0)
+check("1.8g", Number(undefined), NaN)
+check("1.8h", Number("0x10"), 16)
+check("1.8i", Number([5]), 5)
+check("1.8j", Number([1, 2]), NaN)
+check("1.8k", parseInt("08"), 8)
+check("1.8l", Number(true), 1)
 
 // EXPLAIN IT — when would you pick Number(), parseInt(), and parseFloat() and why:
 /*
@@ -257,23 +257,23 @@ function makeSpy() {
 
 {
   const { obj, log } = makeSpy()
-  check("1.9a", (obj as any) + 1, TODO)          // result?
-  check("1.9b", log, TODO)                        // which methods ran, in order? e.g. ["valueOf"]
+  check("1.9a", (obj as any) + 1, 11)          // result?
+  check("1.9b", log, ["valueOf"])                        // which methods ran, in order? e.g. ["valueOf"]
 }
 {
   const { obj, log } = makeSpy()
-  check("1.9c", `${obj}`, TODO)                   // result?
-  check("1.9d", log, TODO)
+  check("1.9c", `${obj}`, "ten")                   // result?
+  check("1.9d", log, ["toString"])
 }
 {
   const { obj, log } = makeSpy()
-  check("1.9e", (obj as any) * 2, TODO)
-  check("1.9f", log, TODO)
+  check("1.9e", (obj as any) * 2, 20)
+  check("1.9f", log, ["valueOf"])
 }
 {
   const { obj, log } = makeSpy()
-  check("1.9g", String(obj), TODO)
-  check("1.9h", log, TODO)
+  check("1.9g", String(obj), "ten")
+  check("1.9h", log, ["toString"])
 }
 
 // EXPLAIN IT — describe the ToPrimitive algorithm including the three hints:
@@ -290,7 +290,12 @@ function makeSpy() {
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive
 
 function makeCounter(): unknown {
-  return TODO // ← your solution
+  let n = 0
+  return {
+    valueOf() {
+      return ++n
+    },
+  }// ← your solution
 }
 
 {
@@ -300,7 +305,13 @@ function makeCounter(): unknown {
 
 // EXPLAIN IT — why does this work, and why is it also a great argument FOR ===:
 /*
+Mert a valueOf a makeCounter belsejében van definiálva, ezért látja az n változót (ezt hívják closure-nak). Az n megmarad a hívások között, és minden valueOf hívás eggyel növeli.
 
+Tehát:
+
+x mindig ugyanaz az objektum
+az n az objektumon kívül, a closure-ban él
+minden összehasonlításnál a JS újra meghívja a valueOf-ot, ami más számot ad vissza
 */
 
 // ═══ EXERCISE 1.11 ★★★ — Symbol.toPrimitive: taking full control ═══
@@ -315,7 +326,15 @@ function makeCounter(): unknown {
 class Temperature {
   degrees: number
   constructor(degrees: number) { this.degrees = degrees }
-  // ← your solution here
+  [Symbol.toPrimitive](hint: "number" | "string" | "default") {
+    if (hint === "number") {
+      return this.degrees;
+    } else if (hint === "string") {
+      return `${this.degrees}°C`;
+    } else if (hint === "default") {
+      return `${this.degrees} deg`;
+    }
+  }
 }
 
 {
@@ -327,7 +346,7 @@ class Temperature {
 
 // EXPLAIN IT — how does Symbol.toPrimitive relate to valueOf/toString (who wins)?
 /*
-
+Symbol.toPrimitive valueOf/toString can be maipoulated and change the default toprimitive behaviour.
 */
 
 // ═══ EXERCISE 1.12 ★★ — relational operators: strings compare like words ═══
@@ -339,19 +358,29 @@ class Temperature {
 //         algorithm has its special nullish rule. They genuinely disagree.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Less_than
 
-check("1.12a", ("10" as any) < "9", TODO)
-check("1.12b", ("10" as any) < 9, TODO)
-check("1.12c", "apple" < "banana", TODO)
-check("1.12d", "Z" < "a", TODO)
-check("1.12e", (null as any) >= 0, TODO)
-check("1.12f", (null as any) > 0, TODO)
-check("1.12g", (undefined as any) <= 0, TODO)
-check("1.12h", NaN <= NaN, TODO)
+check("1.12a", ("10" as any) < "9", true)
+// UTF-16 code units "10" is 49 48, "9" is 57.
+check("1.12b", ("10" as any) < 9, false)
+// "10" is converted to a number 10, 10 < 9 is false.
+check("1.12c", "apple" < "banana", true)
+// UTF-16 code units "apple" is 97 112 112 108 101, "banana" is 98 97 110 97 110 97. 
+check("1.12d", "Z" < "a", true)
+// UTF-16 code units "Z" is 90, "a" is 97.
+check("1.12e", (null as any) >= 0, true)
+// null is converted to 0, 0 >= 0 is true.
+check("1.12f", (null as any) > 0, false)
+// null is converted to 0, 0 > 0 is false.
+check("1.12g", (undefined as any) <= 0, false)
+// undefined is converted to NaN, NaN <= 0 is false.
+check("1.12h", NaN <= NaN, false)
+// NaN is not equal to anything, including itself.
 
 // EXPLAIN IT — why can 1.12e be true while 1.12f is false? What does that tell
 // you about how >= is implemented?
 /*
-
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Less_than the
+Description
+The operands are compared with multiple rounds of coercion, which can be summarized as follows: is straight forward.
 */
 
 // ═══ EXERCISE 1.13 ★★ — floating point: 0.1 + 0.2, but you can explain it ═══
