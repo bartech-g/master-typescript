@@ -392,12 +392,12 @@ The operands are compared with multiple rounds of coercion, which can be summari
 //         magnitudes, e.g. Number.EPSILON * Math.max(1, |a|, |b|).
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/EPSILON
 
-check("1.13a", 0.1 + 0.2 === 0.3, TODO)
-check("1.13b", 0.1 + 0.2, TODO)          // predict the EXACT printed value
-check("1.13c", 0.5 + 0.25 === 0.75, TODO) // why does THIS one work? (see EXPLAIN IT)
+check("1.13a", 0.1 + 0.2 === 0.3, false)
+check("1.13b", 0.1 + 0.2, 0.30000000000000004)          // predict the EXACT printed value
+check("1.13c", 0.5 + 0.25 === 0.75, true) // why does THIS one work? (see EXPLAIN IT)
 
 function approxEqual(a: number, b: number): boolean {
-  return TODO // ← your solution
+  return Math.abs(a - b) <= Number.EPSILON * Math.max(1, Math.abs(a), Math.abs(b))
 }
 
 check("1.13d", approxEqual(0.1 + 0.2, 0.3), true)
@@ -406,7 +406,11 @@ check("1.13f", approxEqual(1e10 + 1e-6, 1e10), true) // relative, not absolute!
 
 // EXPLAIN IT — why is 1.13c exact while 1.13a isn't? Use "binary fraction":
 /*
-
+Doubles store numbers as binary fractions (sums of powers of 2).
+0.5 = 2^-1 and 0.25 = 2^-2, so they are stored exactly, and so is their sum 0.75.
+0.1 and 0.2 are repeating fractions in binary (like 1/3 in decimal),
+so they get rounded when stored. The two small rounding errors add up,
+and 0.1 + 0.2 ends up as 0.30000000000000004, not exactly 0.3.
 */
 
 // ═══ EXERCISE 1.14 ★★★ — big numbers: where integers silently break ═══
