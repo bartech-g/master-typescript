@@ -422,17 +422,20 @@ and 0.1 + 0.2 ends up as 0.30000000000000004, not exactly 0.3.
 //         COMPARISON operators (==, <) work across the two types.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
 
-check("1.14a", Number.MAX_SAFE_INTEGER, TODO)
-check("1.14b", 9007199254740992 === 9007199254740993, TODO)
-check("1.14c", 9007199254740993, TODO)   // what does this literal actually store?
-check("1.14d", attempt(() => (1n as any) + 1), TODO)
-check("1.14e", (1n as any) == 1, TODO)
-check("1.14f", (2n as any) > 1, TODO)
-check("1.14g", 10n / 3n, TODO)
+check("1.14a", Number.MAX_SAFE_INTEGER, 9007199254740991)
+check("1.14b", 9007199254740992 === 9007199254740993, true)
+check("1.14c", 9007199254740993, 9007199254740992)   // what does this literal actually store?
+check("1.14d", attempt(() => (1n as any) + 1), "TypeError")
+check("1.14e", (1n as any) == 1, true)
+check("1.14f", (2n as any) > 1, true)
+check("1.14g", 10n / 3n, 3n)
 
 // EXPLAIN IT — when do you reach for BigInt, and what's the interop rule:
 /*
-
+Use BigInt when integers can exceed 2^53 - 1 (Number.MAX_SAFE_INTEGER),
+e.g. database IDs, timestamps in nanoseconds, cryptography, exact large math.
+Interop rule: arithmetic between BigInt and number throws a TypeError,
+so convert explicitly (BigInt(x) or Number(x)). Comparisons (==, <, >) work across both types.
 */
 
 // ═══ EXERCISE 1.15 ★★★ — division, Infinity and NaN propagation ═══
@@ -442,21 +445,26 @@ check("1.14g", 10n / 3n, TODO)
 //         signed Infinity; "meaningless" operations give NaN.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN
 
-check("1.15a", 1 / 0, TODO)
-check("1.15b", -1 / 0, TODO)
-check("1.15c", 0 / 0, TODO)
-check("1.15d", Infinity - Infinity, TODO)
-check("1.15e", Infinity * 0, TODO)
-check("1.15f", ("5" as any) / ("0" as any), TODO)
-check("1.15g", Math.sqrt(-1), TODO)
-check("1.15h", NaN + 1, TODO)
-check("1.15i", isNaN("hello" as any), TODO)
-check("1.15j", Number.isNaN("hello" as any), TODO)
+check("1.15a", 1 / 0, Infinity)
+check("1.15b", -1 / 0, -Infinity)
+check("1.15c", 0 / 0, NaN)
+check("1.15d", Infinity - Infinity, NaN)
+check("1.15e", Infinity * 0, NaN)
+check("1.15f", ("5" as any) / ("0" as any), Infinity)
+check("1.15g", Math.sqrt(-1), NaN)
+check("1.15h", NaN + 1, NaN)
+check("1.15i", isNaN("hello" as any), true)
+check("1.15j", Number.isNaN("hello" as any), false)
 
 // EXPLAIN IT — global isNaN vs Number.isNaN: which one coerces, which should
 // you use, and why does 1.15i/j differ?
 /*
-
+Global isNaN first COERCES its argument to a number, then checks for NaN.
+"hello" -> Number("hello") -> NaN, so isNaN("hello") is true (misleading:
+"hello" is not the value NaN, it is just not numeric).
+Number.isNaN does NOT coerce: it returns true only if the value is
+actually the number NaN. "hello" is a string, so it returns false.
+Use Number.isNaN: it is precise and has no coercion surprises.
 */
 
 // ═══ EXERCISE 1.16 ★★★ — JSON.stringify: the silent value-dropper ═══
@@ -468,18 +476,28 @@ check("1.15j", Number.isNaN("hello" as any), TODO)
 //         TOP level stringify returns undefined (not a string).
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 
-check("1.16a", JSON.stringify({ a: 1, b: undefined }), TODO)
-check("1.16b", JSON.stringify([1, undefined, 2]), TODO)
-check("1.16c", JSON.stringify(undefined), TODO)
-check("1.16d", JSON.stringify(NaN), TODO)
-check("1.16e", JSON.stringify({ f: () => 1 }), TODO)
-check("1.16f", JSON.stringify(new Date(0)), TODO)
-check("1.16g", attempt(() => { const a: any = {}; a.self = a; return JSON.stringify(a) }), TODO)
+check("1.16a", JSON.stringify({ a: 1, b: undefined }), '{"a":1}')
+check("1.16b", JSON.stringify([1, undefined, 2]), "[1,null,2]")
+check("1.16c", JSON.stringify(undefined), undefined)
+check("1.16d", JSON.stringify(NaN), "null")
+check("1.16e", JSON.stringify({ f: () => 1 }), "{}")
+check("1.16f", JSON.stringify(new Date(0)), '"1970-01-01T00:00:00.000Z"')
+check("1.16g", attempt(() => { const a: any = {}; a.self = a; return JSON.stringify(a) }), "TypeError")
 
 // EXPLAIN IT — list what JSON.stringify does with each non-JSON value, and name
 // one real bug this causes in APIs:
 /*
-
+JSON.stringify silently drops or rewrites values that JSON cannot represent:
+- undefined, functions, symbols: dropped in objects, become null in arrays,
+  and at top level the call returns undefined (not a string).
+- NaN and Infinity: become null.
+- Date: converted via toJSON to an ISO string (it comes back as a string,
+  not a Date).
+- BigInt and circular references: throw a TypeError.
+Real API bug: sending { price: undefined } or { price: NaN } makes the field
+vanish or turn into null, so the server (or client) treats "missing" and
+"unknown" as the same thing, e.g. a PATCH that was meant to clear a field
+silently does nothing, or a calculation error (NaN) is stored as null.
 */
 
 // ═══ EXERCISE 1.17 ★★★★★ — implement loose equality yourself ═══

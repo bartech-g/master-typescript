@@ -45,32 +45,32 @@ function ex2_1a() {
   if (true) { var v = 1 }
   return v // legal?! what value?
 }
-check("2.1a", ex2_1a(), TODO)
+check("2.1a", ex2_1a(), 1)
 
 function ex2_1b() {
   // the let-version of the same code is a compile error in TS and a
   // ReferenceError in JS — proof via eval:
   return attempt(() => eval("if (true) { let l = 1 }; l"))
 }
-check("2.1b", ex2_1b(), TODO)
+check("2.1b", ex2_1b(), "ReferenceError")
 
 function ex2_1c() {
   var x = 1
   { var x = 2 } // same variable or a new one?
   return x
 }
-check("2.1c", ex2_1c(), TODO)
+check("2.1c", ex2_1c(), 2)
 
 function ex2_1d() {
   let x = 1
   { let x = 2 } // same variable or a new one?
   return x
 }
-check("2.1d", ex2_1d(), TODO)
+check("2.1d", ex2_1d(), 1)
 
 // EXPLAIN IT (2–4 sentences, use the vocab, say it out loud):
 /*
-
+Var is funtion or globab scoped, gets hoisted and declared with undifined in the initialization pahes. let and cost block scoped cant be redeclared let can be reassigned with an other value
 */
 
 // ═══ EXERCISE 2.2 ★★ — hoisting: three different behaviors ═══
@@ -81,18 +81,25 @@ check("2.1d", ex2_1d(), TODO)
 //         uninitialized (TDZ) until their line runs.
 // DOCS: https://developer.mozilla.org/en-US/docs/Glossary/Hoisting
 
-check("2.2a", attempt(() => eval("var r = x; var x = 5; r")), TODO)
-check("2.2b", attempt(() => eval("var r = f(); function f() { return 5 } r")), TODO)
-check("2.2c", attempt(() => eval("var r = x; let x = 5; r")), TODO)
-check("2.2d", attempt(() => eval("var r = f(); var f = function () { return 5 }; r")), TODO)
-check("2.2e", attempt(() => eval("typeof x")), TODO)              // x never declared at all
-check("2.2f", attempt(() => eval("var r = typeof x; let x = 1; r")), TODO) // typeof does NOT save you from TDZ
+check("2.2a", attempt(() => eval("var r = x; var x = 5; r")), undefined)
+check("2.2b", attempt(() => eval("var r = f(); function f() { return 5 } r")), 5)
+check("2.2c", attempt(() => eval("var r = x; let x = 5; r")), "ReferenceError")
+check("2.2d", attempt(() => eval("var r = f(); var f = function () { return 5 }; r")), "TypeError")
+check("2.2e", attempt(() => eval("typeof x")), "undefined")              // x never declared at all
+check("2.2f", attempt(() => eval("var r = typeof x; let x = 1; r")), "ReferenceError") // typeof does NOT save you from TDZ
 
 // EXPLAIN IT — why is 2.2e safe but 2.2f isn't? What does that say about TDZ
 // vs "not declared"?
 /*
-
+typeof is safe on an undeclared name: no binding exists, so the engine
+just returns "undefined" instead of throwing.
+In 2.2f the binding for x DOES exist (let is hoisted), but it is
+uninitialized (TDZ) until its line runs. Touching an uninitialized
+binding always throws ReferenceError, and typeof is no exception.
+So TDZ is not "not declared": the name is declared and known, but
+forbidden to access yet. "Not declared" means no binding at all.
 */
+
 
 // ═══ EXERCISE 2.3 ★★★ — the classic: var in a loop ═══
 // TASK: Predict what each array of calls returns.
@@ -225,7 +232,7 @@ check("2.8a", fn(), TODO)
 check("2.8b", attempt(() => eval("var f = function nfe() {}; nfe")), TODO)  // visible outside?
 check("2.8c", attempt(() => eval("(function nfe() { nfe = 5; return nfe })()")), TODO) // assign to it? (module = strict mode)
 check("2.8d", fn.name, TODO)
-const anon = () => {}
+const anon = () => { }
 check("2.8e", anon.name, TODO)  // "anonymous"... or is it?
 
 // EXPLAIN IT — what is the NFE name binding good for (think recursion), and
@@ -399,7 +406,7 @@ section("2.14", () => {
   check("2.14e", acc.getBalance(), 0)
   check("2.14f", "balance" in acc, false)                 // no property to reach
   check("2.14g", Object.keys(acc).length, 3)              // only the 3 methods
-  ;(acc as any).balance = 99999                            // attacker tries anyway
+    ; (acc as any).balance = 99999                            // attacker tries anyway
   check("2.14h", acc.getBalance(), 0)                      // ...and achieves nothing
 })
 
@@ -444,4 +451,4 @@ check("2.15", gauntlet(), TODO)
 */
 
 console.log(`\nchapter 02: ${_pass} pass, ${_fail} fail, ${_skip} unanswered`)
-export {}
+export { }
