@@ -115,14 +115,14 @@ function ex2_3a() {
   for (var i = 0; i < 3; i++) fns.push(() => i)
   return fns.map(f => f())
 }
-check("2.3a", ex2_3a(), TODO)
+check("2.3a", ex2_3a(), [3, 3, 3])
 
 function ex2_3b() {
   const fns: Array<() => number> = []
   for (let i = 0; i < 3; i++) fns.push(() => i)
   return fns.map(f => f())
 }
-check("2.3b", ex2_3b(), TODO)
+check("2.3b", ex2_3b(), [0, 1, 2])
 
 // EXPLAIN IT — this is THE closure interview question. Explain both results:
 /*
@@ -141,7 +141,7 @@ check("2.3b", ex2_3b(), TODO)
 function ex2_4() {
   const fns: Array<() => number> = []
   for (var i = 0; i < 3; i++) {
-    fns.push(() => i) // ← change only this line
+    fns.push(((captured) => () => captured)(i)) // ← change only this line
   }
   return fns.map(f => f())
 }
@@ -164,10 +164,10 @@ function makeAdder(start: number) {
 
 const addA = makeAdder(10)
 const addB = makeAdder(100)
-check("2.5a", addA(1), TODO)
-check("2.5b", addA(1), TODO)
-check("2.5c", addB(1), TODO)  // does addB see addA's total?
-check("2.5d", addA(0), TODO)
+check("2.5a", addA(1), 11)
+check("2.5b", addA(1), 12)
+check("2.5c", addB(1), 101)  // does addB see addA's total?
+check("2.5d", addA(0), 12)
 
 // EXPLAIN IT — where does `total` live after makeAdder returns? Why isn't it
 // garbage-collected?
@@ -188,9 +188,9 @@ function makePair() {
 const pair = makePair()
 pair.inc()
 pair.inc()
-check("2.6a", pair.get(), TODO)
+check("2.6a", pair.get(), 2)
 const pair2 = makePair()
-check("2.6b", pair2.get(), TODO)
+check("2.6b", pair2.get(), 0)
 
 // EXPLAIN IT — one sentence: what exactly do the two functions share?
 /*
@@ -213,11 +213,17 @@ function ex2_7() {
   results.push(outer)
   return results
 }
-check("2.7", ex2_7(), TODO)
+check("2.7", ex2_7(), ["middle", "inner", "middle"])
 
 // EXPLAIN IT — describe how the engine resolves the name `outer` (scope chain):
 /*
-
+When the engine sees a name, it looks in the current scope first.
+If not found, it moves outward to the enclosing scope, and so on
+(block -> function -> global): this is the scope chain.
+The first match wins, so a closer variable with the same name
+"shadows" (hides) the outer ones. Here, inside the block `outer` is
+"inner", after the block it is "middle", and the global "outer" is
+never reached because a nearer declaration is always found first.
 */
 
 // ═══ EXERCISE 2.8 ★★★ — named function expressions ═══
@@ -228,17 +234,23 @@ check("2.7", ex2_7(), TODO)
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/function
 
 const fn = function myself() { return typeof myself }
-check("2.8a", fn(), TODO)
-check("2.8b", attempt(() => eval("var f = function nfe() {}; nfe")), TODO)  // visible outside?
-check("2.8c", attempt(() => eval("(function nfe() { nfe = 5; return nfe })()")), TODO) // assign to it? (module = strict mode)
-check("2.8d", fn.name, TODO)
+check("2.8a", fn(), "function")
+check("2.8b", attempt(() => eval("var f = function nfe() {}; nfe")), "ReferenceError")  // visible outside?
+check("2.8c", attempt(() => eval("(function nfe() { nfe = 5; return nfe })()")), "TypeError") // assign to it? (module = strict mode)
+check("2.8d", fn.name, "myself")
 const anon = () => { }
-check("2.8e", anon.name, TODO)  // "anonymous"... or is it?
+check("2.8e", anon.name, "anon")  // "anonymous"... or is it?
 
 // EXPLAIN IT — what is the NFE name binding good for (think recursion), and
 // why did 2.8e surprise most people:
 /*
-
+The NFE name is a read-only binding visible only inside the function,
+so the function can refer to itself (e.g. recursion) without depending
+on the outer variable: even if `fn` is reassigned or the function is
+passed around anonymously, `myself` still points to this function.
+2.8e surprises people because the arrow function has no name of its own,
+yet .name is "anon": the engine infers the name from the variable it is
+assigned to (name inference), instead of giving "" or "anonymous".
 */
 
 // ═══ EXERCISE 2.9 ★★★ — closures capture bindings, objects travel by reference ═══
@@ -253,11 +265,16 @@ function ex2_9() {
   const after = getName()
   return [before, after]
 }
-check("2.9", ex2_9(), TODO)
+check("2.9", ex2_9(), ["Ada", "Grace"])
 
 // EXPLAIN IT — did the closure "capture user.name"? What did it capture exactly?
 /*
-
+No, the closure did not capture the value of user.name ("Ada").
+It captured the binding `user`, a reference to the object.
+The expression user.name is evaluated again on every call, so it
+sees the current state of that object. The object lives on the heap
+and is shared by reference: changing user.name mutates that same
+object, and every closure holding the binding sees the change.
 */
 
 // ═══ EXERCISE 2.10 ★★★ — assigning to undeclared variables ═══
@@ -267,13 +284,21 @@ check("2.9", ex2_9(), TODO)
 //         In strict mode it throws. Modules and classes are always strict.
 // DOCS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode
 
-check("2.10a", attempt(() => eval("'use strict'; leaked1 = 5; leaked1")), TODO)
-check("2.10b", attempt(() => { (globalThis as any).legit = 5; return (globalThis as any).legit }), TODO)
+check("2.10a", attempt(() => eval("'use strict'; leaked1 = 5; leaked1")), "ReferenceError")
+check("2.10b", attempt(() => { (globalThis as any).legit = 5; return (globalThis as any).legit }), 5)
 
 // EXPLAIN IT — name three things strict mode changes, and why modules made
 // "use strict" boilerplate obsolete:
 /*
-
+Strict mode changes, among others:
+1. Assigning to an undeclared variable throws ReferenceError instead of
+   silently creating an implicit global.
+2. Assigning to read-only things (e.g. an NFE name, a frozen property)
+   throws TypeError instead of failing silently.
+3. `this` in a plain function call is undefined instead of the global
+   object. (Also: duplicate parameter names and `with` are forbidden.)
+ES modules (and classes) are always strict by default, so writing
+"use strict" in them is redundant: the safe behavior is already on.
 */
 
 // ═══ EXERCISE 2.11 ★★★★ — hoisting horror story (interview classic) ═══
@@ -288,7 +313,7 @@ check("2.11a", attempt(() => eval(`
     return r
   }
   outer()
-`)), TODO)
+`)), "undefined")
 
 check("2.11b", attempt(() => eval(`
   var y = 1
@@ -298,7 +323,7 @@ check("2.11b", attempt(() => eval(`
     return r
   }
   test()
-`)), TODO)
+`)), undefined)
 
 check("2.11c", attempt(() => eval(`
   function whatAmI() {
@@ -307,7 +332,7 @@ check("2.11c", attempt(() => eval(`
     return typeof x
   }
   whatAmI()
-`)), TODO)
+`)), "number")
 
 check("2.11d", attempt(() => eval(`
   function f() { return 1 }
@@ -315,12 +340,12 @@ check("2.11d", attempt(() => eval(`
   function f() { return 2 }
   var r2 = f()
   r1 + "," + r2
-`)), TODO)
+`)), "2,2")
 
 // EXPLAIN IT — describe the two-phase model: what happens to var, let, and
 // function declarations BEFORE the first line executes?
 /*
-
+a függvény-deklaráció a creation fázisban kész értékkel jön létre, a var csak undefined-dal, az értékadása a saját sorában történik meg.
 */
 
 // ═══ EXERCISE 2.12 ★★★★ — default parameters have their own scope rules ═══
@@ -329,16 +354,23 @@ check("2.11d", attempt(() => eval(`
 // HINT 1: Parameters initialize left to right; each can see the ones BEFORE it.
 // HINT 2: Referencing a LATER parameter in a default is a TDZ error at call time.
 
-check("2.12a", attempt(() => eval("function f(a = 1, b = a + 1) { return b } f()")), TODO)
-check("2.12b", attempt(() => eval("function f(a = 1, b = a + 1) { return b } f(5)")), TODO)
-check("2.12c", attempt(() => eval("function f(a = 1, b = a + 1) { return b } f(5, 10)")), TODO)
-check("2.12d", attempt(() => eval("function g(a = b, b = 2) { return a } g()")), TODO)
-check("2.12e", attempt(() => eval("function g(a = b, b = 2) { return a } g(1)")), TODO)
+check("2.12a", attempt(() => eval("function f(a = 1, b = a + 1) { return b } f()")), 2)
+check("2.12b", attempt(() => eval("function f(a = 1, b = a + 1) { return b } f(5)")), 6)
+check("2.12c", attempt(() => eval("function f(a = 1, b = a + 1) { return b } f(5, 10)")), 10)
+check("2.12d", attempt(() => eval("function g(a = b, b = 2) { return a } g()")), "ReferenceError")
+check("2.12e", attempt(() => eval("function g(a = b, b = 2) { return a } g(1)")), 1)
 
 // EXPLAIN IT — why does 2.12d throw but 2.12e doesn't?
 /*
-
+Parameters are initialized left to right, and a default expression is
+evaluated only when its argument is missing (undefined).
+In 2.12d, a has no argument, so its default `b` runs. But b is declared
+later and still in its TDZ (not initialized yet), so reading it throws
+ReferenceError.
+In 2.12e, a receives 1, so its default expression is never evaluated.
+b is never touched early, so no error occurs.
 */
+
 
 // ═══ EXERCISE 2.13 ★★★★ — implement once() and memoize() ═══
 // TASK: Implement both using closures.
@@ -349,11 +381,26 @@ check("2.12e", attempt(() => eval("function g(a = b, b = 2) { return a } g(1)"))
 // HINT 2: memoize: a Map<string, R> in the closure; key = JSON.stringify(args).
 
 function once<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
-  return TODO // ← your solution
+  let called = false
+  let result: R
+  return (...args: A) => {
+    if (!called) {
+      called = true
+      result = fn(...args)
+    }
+    return result
+  }
 }
 
 function memoize<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
-  return TODO // ← your solution
+  const cache = new Map<string, R>()
+  return (...args: A) => {
+    const key = JSON.stringify(args)
+    if (cache.has(key)) return cache.get(key) as R
+    const result = fn(...args)
+    cache.set(key, result)
+    return result
+  }
 }
 
 section("2.13", () => {
@@ -375,7 +422,16 @@ section("2.13", () => {
 
 // EXPLAIN IT — what's the classic bug hiding in JSON.stringify-keyed memoization?
 /*
-
+JSON.stringify drops or rewrites values JSON can't represent, so
+different arguments can produce the same key (collisions):
+undefined, NaN, Infinity and -Infinity all become null, so f(NaN)
+and f(null) share a cache entry; -0 becomes 0; functions/symbols
+become null in arrays. Objects with different key order produce
+different keys ({a:1,b:2} vs {b:2,a:1}) even though they are equal,
+so you get needless cache misses. It also throws on BigInt and
+circular references, and the key says nothing about `this`.
+Result: wrong cached value returned for different inputs, or
+the cache silently not working.
 */
 
 // ═══ EXERCISE 2.14 ★★★★ — the module pattern: real privacy without classes ═══
@@ -393,7 +449,24 @@ type Account = {
 }
 
 function createAccount(initial: number): Account {
-  return TODO // ← your solution
+  let amount: number = initial;
+  function deposit(d: number) {
+    if (d <= 0) return
+    amount += d
+  }
+  function getBalance() {
+    return amount
+  }
+  function withdraw(w: number) {
+    if (amount - w >= 0) {
+      if (w <= 0) return false
+      amount = amount - w
+      return true
+    } else {
+      return false
+    }
+  }
+  return { deposit, getBalance, withdraw }
 }
 
 section("2.14", () => {
@@ -413,7 +486,8 @@ section("2.14", () => {
 // EXPLAIN IT — compare closure privacy with class #private fields: name one
 // advantage of each:
 /*
-
+with closure is simpler for one function
+with classes the class can be combined and more structured
 */
 
 // ═══ EXERCISE 2.15 ★★★★★ — the closure gauntlet ═══
@@ -426,6 +500,7 @@ function gauntlet(): number[] {
   const fns: Array<() => number> = []
 
   for (var i = 0; i < 2; i++) {
+
     fns.push(() => x + i)
   }
   x = 10
@@ -443,11 +518,18 @@ function gauntlet(): number[] {
   out.push(capture())
   return out
 }
-check("2.15", gauntlet(), TODO)
+check("2.15", gauntlet(), [1002, 1002, 200, 10])
 
 // EXPLAIN IT — for each of the 4 numbers, one sentence on WHY:
 /*
-
+1002 (1st): closure captured the BINDING of outer x (not the value 1) and the
+  shared var i; at call time x is 1000 and i is 2 -> 1002.
+1002 (2nd): same shared x and same shared var i (not 0/1), so identical result.
+200: the block's `let x` shadows the outer x; the closure holds that inner
+  binding, which was reassigned to 200 before the call. The later x = 1000
+  changes the OUTER x only.
+10: the IIFE copied the value of x (10) into its parameter `snapshot`,
+  so it is a value snapshot, unaffected by x = 1000.
 */
 
 console.log(`\nchapter 02: ${_pass} pass, ${_fail} fail, ${_skip} unanswered`)
